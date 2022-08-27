@@ -2,6 +2,7 @@ import os, sys
 import struct
 import pty, fcntl, termios
 import time
+import array
 
 CHILD = 0
 
@@ -31,7 +32,7 @@ class TTY:
             fcntl.ioctl(fd, termios.TIOCSWINSZ, struct.pack("HHHH", 900, 900, 0, 0))
 
             tcattrib = termios.tcgetattr(fd)
-            tcattrib[3] = tcattrib[3] & ~termios.ICANON
+            tcattrib[3] = tcattrib[3] & ~(termios.ICANON | termios.ECHO | termios.ECHONL)
             termios.tcsetattr(fd, termios.TCSAFLUSH, tcattrib)
 
             self.pid = pid
@@ -50,19 +51,25 @@ class TTY:
         
 
     def read(self):
-        data = b""
-        while True:
-            try:
-                read_block = os.read(self.fd, 512)
-            except OSError as e:
-                print(f"os.read() error: {e}")
-                read_block = ""
+        # data = b""
+        # while True:
+        #     try:
+        #         read_block = os.read(self.fd, 512)
+        #     except OSError as e:
+        #         print(f"os.read() error: {e}")
+        #         read_block = ""
 
-            data += read_block
-            if(len(data) < 512):
-                break
+        #     data += read_block
+        #     if(len(data) < 512):
+        #         break
             
-        return data
+        # return data
+        buf = array.array('i', [0])
+        if fcntl.ioctl(self.fd, termios.FIONREAD, buf, 1) < 0:
+            print("error with fcntl.ioctl(termios.FIONREAD)")
+            return ""
+        
+        return os.read(self.fd, buf[0])
     
     def tcDrain(self):
         termios.tcdrain(self.fd)
@@ -70,25 +77,28 @@ class TTY:
 t = TTY()
 
 def readSTDIN():
-    data = b""
-    while True:
-        try:
-            read_block = os.read(sys.stdin.fileno(), 512)
-        except OSError as e:
-            print(f"os.read() error: {e}")
-            read_block = ""
+        buf = array.array('i', [0])
+        if fcntl.ioctl(sys.stdin.fileno(), termios.FIONREAD, buf, 1) < 0:
+            print("error with fcntl.ioctl(termios.FIONREAD)")
+            return ""
+        
+        return os.read(sys.stdin.fileno(), buf[0])
 
-        data += read_block
-        if(len(data) < 512):
-            break
-     
-    return data
 
-#t.write(readSTDIN())
-t.write(b"echo hello\n")
-time.sleep(1)
-try:
-    os.write(sys.stdout.fileno(), t.read())
-except OSError as e:
-    print(f"os.write(): {e}")
-sys.stdout.flush()
+# #t.write(readSTDIN())
+# t.write(b"echo hello\n")
+# time.sleep(1)
+# try:
+#     os.write(sys.stdout.fileno(), t.read())
+# except OSError as e:
+#     print(f"os.write(): {e}")
+# #sys.stdout.flush()
+
+while True:
+    t.write(readSTDIN())
+    t.tcDrain()
+    try:
+        os.write(sys.stdout.fileno(), t.read())
+    except OSError as e:
+        print(f"os.write(): {e}")
+    sys.stdout.flush() 
