@@ -85,14 +85,6 @@ def readSTDIN():
         return os.read(sys.stdin.fileno(), buf[0])
 
 
-# #t.write(readSTDIN())
-# t.write(b"echo hello\n")
-# time.sleep(1)
-# try:
-#     os.write(sys.stdout.fileno(), t.read())
-# except OSError as e:
-#     print(f"os.write(): {e}")
-# #sys.stdout.flush()
 
 while True:
     t.write(readSTDIN())
