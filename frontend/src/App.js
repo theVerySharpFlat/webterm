@@ -3,22 +3,34 @@ import './App.css';
 
 import { Terminal } from 'xterm'
 import 'xterm/css/xterm.css'
-//import { FitAddon } from 'xterm-addon-fit'
+import { FitAddon } from 'xterm-addon-fit'
+
+let fitFN = null;
 
 class App extends React.Component {
   constructor() {
     super()
     this.terminal = new Terminal();
-    // this.fitAddon = new FitAddon();
+    this.terminal.onResize(evt => {
+      console.log(`resize: (${evt.cols}, ${evt.rows})`);
+    });
+    this.fitAddon = new FitAddon();
+    fitFN = () => {
+      this.fitAddon.fit();
+    }
+    window.onresize = function() {
+      fitFN();
+    }
     this.initializedTerminal = false;
   }
 
   componentDidMount() {
     if(!this.initializedTerminal) {
       this.terminal.open(document.getElementById("terminal"))
-      //this.terminal.loadAddon(this.fitAddon);
-      //this.fitAddon.fit();
+      this.terminal.loadAddon(this.fitAddon);
+      this.fitAddon.fit();
       this.terminal.write('Hello from \x1B[1;3;31mxterm.js\x1B[0m $ ')
+     
       this.initializedTerminal = true;
     }
   }

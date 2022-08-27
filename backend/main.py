@@ -51,19 +51,6 @@ class TTY:
         
 
     def read(self):
-        # data = b""
-        # while True:
-        #     try:
-        #         read_block = os.read(self.fd, 512)
-        #     except OSError as e:
-        #         print(f"os.read() error: {e}")
-        #         read_block = ""
-
-        #     data += read_block
-        #     if(len(data) < 512):
-        #         break
-            
-        # return data
         buf = array.array('i', [0])
         if fcntl.ioctl(self.fd, termios.FIONREAD, buf, 1) < 0:
             print("error with fcntl.ioctl(termios.FIONREAD)")
