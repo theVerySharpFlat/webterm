@@ -22,6 +22,11 @@ class App extends React.Component {
       fitFN();
     }
     this.initializedTerminal = false;
+
+    this.socket = new WebSocket("https://8000-theverysharpfla-webterm-dtom034vv3a.ws-us63.gitpod.io/");
+    this.socket.addEventListener("message", message => {
+      console.log("message from server: " + message.data);
+    });
   }
 
   componentDidMount() {
