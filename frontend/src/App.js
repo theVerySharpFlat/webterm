@@ -4,6 +4,7 @@ import './App.css';
 import { Terminal } from 'xterm'
 import 'xterm/css/xterm.css'
 import { FitAddon } from 'xterm-addon-fit'
+import { io } from 'socket.io-client'
 
 let fitFN = null;
 
@@ -23,18 +24,18 @@ class App extends React.Component {
     }
     this.initializedTerminal = false;
 
-    this.socket = new WebSocket("wss://localhost:8234");
-    this.socket.addEventListener("message", message => {
-      console.log("message from server: " + message.data);
+    this.socket = io("ws://localhost:8234", {transports: ['websocket', 'polling', 'flashsocket']});
+
+    this.socket.on("connect", () => {
+      console.log(`${this.socket.id} has connected!`);
     });
-    this.socket.addEventListener('close', data=> {
-      console.log("close!");
+
+    this.socket.on("disconnect", () => {
+      console.log("disconnected!");
     });
-    this.socket.addEventListener('open', event => {
-      console.log("open!");
-    })
-    this.socket.addEventListener('error', event => {
-      console.log(`websocket error: ${event}`);
+
+    this.socket.on("message", data => {
+      console.log(`message: ${data}`);
     })
   }
 
