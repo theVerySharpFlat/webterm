@@ -23,10 +23,19 @@ class App extends React.Component {
     }
     this.initializedTerminal = false;
 
-    this.socket = new WebSocket("https://8000-theverysharpfla-webterm-dtom034vv3a.ws-us63.gitpod.io/");
+    this.socket = new WebSocket("wss://localhost:8234");
     this.socket.addEventListener("message", message => {
       console.log("message from server: " + message.data);
     });
+    this.socket.addEventListener('close', data=> {
+      console.log("close!");
+    });
+    this.socket.addEventListener('open', event => {
+      console.log("open!");
+    })
+    this.socket.addEventListener('error', event => {
+      console.log(`websocket error: ${event}`);
+    })
   }
 
   componentDidMount() {

@@ -91,6 +91,7 @@ def handleConnection(sock: socket.socket):
 
     while True:
         readBytes = readSocket()
+        os.write(sys.stdout.fileno(), readBytes)
         t.write(readBytes)
         writeSocket(t.read())
     pass
@@ -99,11 +100,12 @@ class SocketManager:
     socket = None
     def __init__(self):
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self.socket.bind(("localhost", 8000))
+        self.socket.bind(("localhost", 8234))
         self.socket.listen(1)
     
     def accept(self):
         (clientSocket, address) = self.socket.accept()
+        print("accept!")
         thread = threading.Thread(target=handleConnection, args=(clientSocket,), daemon=True)
         thread.run()
 
