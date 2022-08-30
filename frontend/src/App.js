@@ -4,7 +4,8 @@ import './App.css';
 import { Terminal } from 'xterm'
 import 'xterm/css/xterm.css'
 import { FitAddon } from 'xterm-addon-fit'
-import { io } from 'socket.io-client'
+
+import {sock} from './socket'
 
 let fitFN = null;
 
@@ -18,25 +19,34 @@ class App extends React.Component {
     this.fitAddon = new FitAddon();
     fitFN = () => {
       this.fitAddon.fit();
+      sock.emit("resz", JSON.stringify({
+        "rows": this.terminal.rows,
+        "cols": this.terminal.cols
+      }));
     }
     window.onresize = function() {
       fitFN();
     }
     this.initializedTerminal = false;
 
-    this.socket = io("ws://localhost:8234", {transports: ['websocket', 'polling', 'flashsocket']});
-
-    this.socket.on("connect", () => {
-      console.log(`${this.socket.id} has connected!`);
+    sock.once("connect", () => {
+      console.log("connected to " + sock.id);
     });
 
-    this.socket.on("disconnect", () => {
-      console.log("disconnected!");
+    sock.on("dat2fe", (data) => {
+      this.terminal.write(new Uint8Array(data));
     });
 
-    this.socket.on("message", data => {
-      console.log(`message: ${data}`);
-    })
+    sock.on("reqResz", (data) => {
+      console.log("requestResize")
+      fitFN();
+    });
+
+    this.terminal.onData(recv => sock.emit("dat2be", recv));
+
+    sock.once("disconnect", () => {
+      console.log("disconnected from " + sock.id);
+    });
   }
 
   componentDidMount() {
@@ -44,14 +54,15 @@ class App extends React.Component {
       this.terminal.open(document.getElementById("terminal"))
       this.terminal.loadAddon(this.fitAddon);
       this.fitAddon.fit();
-      this.terminal.write('Hello from \x1B[1;3;31mxterm.js\x1B[0m $ ')
      
       this.initializedTerminal = true;
     }
   }
 
   render() {
-    return <div id="terminal"></div>
+    return (
+      <div id="terminal"></div>
+    )
   }
 }
 

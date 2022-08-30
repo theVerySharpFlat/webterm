@@ -5,6 +5,10 @@ import time
 import array
 
 import subprocess
+import asyncio
+
+import json
+
 
 try:
     import socketio
@@ -43,24 +47,23 @@ class TTY:
             try:
                 env = os.environ
                 #env["TERM"] = "dumb"
-                os.execle("/bin/sh", "/bin/sh", env)
+                os.execle("/bin/zsh", "/bin/zsh", env)
             except:
                 print("execl failed!")
 
         else:
-            fcntl.ioctl(fd, termios.TIOCSWINSZ, struct.pack("HHHH", 900, 900, 0, 0))
-
-            tcattrib = termios.tcgetattr(fd)
-            tcattrib[3] = tcattrib[3] & ~(termios.ICANON | termios.ECHO | termios.ECHONL)
-            termios.tcsetattr(fd, termios.TCSAFLUSH, tcattrib)
-
             self.pid = pid
             self.fd = fd
+
+            self.resize(0, 0)
+
+            tcattrib = termios.tcgetattr(fd)
+            tcattrib[3] = tcattrib[3] & ~(termios.ICANON)
+            termios.tcsetattr(fd, termios.TCSAFLUSH, tcattrib)
+
             
-            # os.write(sys.stdout.fileno(), os.read(fd, 1024))
-            # os.write(fd, b"echo hello\n")
-            # time.sleep(3)
-            # os.write(sys.stdout.fileno(), os.read(fd, 2048))
+    def resize(self, cols, rows):
+        fcntl.ioctl(self.fd, termios.TIOCSWINSZ, struct.pack("HHHH", rows, cols, 0, 0))
 
     def write(self, bytes):
         try:
@@ -92,14 +95,59 @@ def readSTDIN():
 server = socketio.AsyncServer(async_mode='asgi', cors_allowed_origins="*")
 app = socketio.ASGIApp(server)
 
+connections = {}
+
+async def ttyFN():
+    while True:
+        for sid, tty in connections.items():
+            data = tty.read()
+            if data:
+                await server.emit("dat2fe", data=data, to=sid)
+
+        await asyncio.sleep(0.01)
+
 @server.event
 async def connect(sid, environ, auth):
     print(f"connection: {sid}")
-    await server.emit("message", "Hello, World!")
+    connections[sid] = TTY()
+    await server.emit("reqResz", to=sid)
+
+@server.on("dat2be")
+async def dataToBackend(sid, data):
+    connections[sid].write(bytes(data, "utf-8"))
+
+@server.on("resz")
+async def reszCB(sid, data):
+    obj = json.loads(data)
+    cols = int(obj["cols"])
+    rows = int(obj["rows"])
+    connections[sid].resize(cols, rows)
 
 @server.event
 def disconnect(sid):
     print(f"disconnect: {sid}")
+    connections.pop(sid)
+
 
 if __name__ == "__main__":
-    uvicorn.run(app, host="127.0.0.1", port=8234)
+    # uvicorn.run(app, host="127.0.0.1", port=8234)
+    # loop = asyncio.get_event_loop()
+    # loop.create_task(ttyFN())
+    loop = asyncio.new_event_loop()
+    config = uvicorn.Config(app=app, host="127.0.0.1", port=8234, loop=loop)
+    s = uvicorn.Server(config)
+    fut = loop.create_task(s.serve())
+    loop.create_task(ttyFN())
+    loop.run_until_complete(fut)
+
+
+'''
+t = TTY()
+while True:
+    d = t.read()
+    if d:
+        for byte in bytearray(d):
+            print(byte, end=" ")
+    t.write(readSTDIN())
+    #print(repr(chr(0x0a)))
+'''
