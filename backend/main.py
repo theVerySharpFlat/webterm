@@ -16,7 +16,7 @@ try:
 except ModuleNotFoundError as e:
     print(f"module not found error: {e}")
     print("trying to install module...")
-    subprocess.run([sys.executable, "-m", "pip", "install", "python-socketio"], check=True)
+    subprocess.run("python3 -m pip install python-socketio", shell=True, check=True)
     import socketio
 
 try:
@@ -24,7 +24,7 @@ try:
 except ModuleNotFoundError as e:
     print(f"module not found error: {e}")
     print("trying to install module...")
-    subprocess.run([sys.executable, "-m", "pip", "install", "uvicorn[standard]"], check=True)
+    subprocess.run("python3 -m pip install uvicorn[standard]", shell=True, check=True)
     import uvicorn
 
 
