@@ -8,6 +8,7 @@ import subprocess
 import asyncio
 
 import json
+import platform
 
 
 try:
@@ -45,9 +46,8 @@ class TTY:
         elif pid == CHILD:
             sys.stdout.flush()
             try:
-                env = os.environ
-                #env["TERM"] = "dumb"
-                os.execle("/bin/zsh", "/bin/zsh", env)
+                os.environ["TERM"] = "xterm-256color"
+                os.execl("/bin/zsh", "/bin/zsh")
             except:
                 print("execl failed!")
 
@@ -74,7 +74,10 @@ class TTY:
 
     def read(self):
         buf = array.array('i', [0])
-        if fcntl.ioctl(self.fd, termios.FIONREAD, buf, 1) < 0:
+        query = termios.FIONREAD
+        if platform.system() == "Darwin":
+            query = termios.TIOCOUTQ
+        if fcntl.ioctl(self.fd, query, buf, 1) < 0:
             print("error with fcntl.ioctl(termios.FIONREAD)")
             return ""
         
@@ -82,6 +85,10 @@ class TTY:
     
     def tcDrain(self):
         termios.tcdrain(self.fd)
+
+    def close(self):
+        self.write(b"\0")
+        os.close(self.fd)
 
 
 def readSTDIN():
@@ -126,28 +133,15 @@ async def reszCB(sid, data):
 @server.event
 def disconnect(sid):
     print(f"disconnect: {sid}")
+    connections[sid].close()
     connections.pop(sid)
 
 
 if __name__ == "__main__":
-    # uvicorn.run(app, host="127.0.0.1", port=8234)
-    # loop = asyncio.get_event_loop()
-    # loop.create_task(ttyFN())
     loop = asyncio.new_event_loop()
-    config = uvicorn.Config(app=app, host="127.0.0.1", port=8234, loop=loop)
+    config = uvicorn.Config(app=app, host="127.0.0.1", port=8235, loop=loop)
     s = uvicorn.Server(config)
     fut = loop.create_task(s.serve())
     loop.create_task(ttyFN())
     loop.run_until_complete(fut)
 
-
-'''
-t = TTY()
-while True:
-    d = t.read()
-    if d:
-        for byte in bytearray(d):
-            print(byte, end=" ")
-    t.write(readSTDIN())
-    #print(repr(chr(0x0a)))
-'''
