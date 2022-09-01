@@ -25,6 +25,3 @@ cp run.py build
 
 # copy configuration templates
 cp backend-config.template.json build/backend-config.json
-
-# symlink frontend config to frontend directory
-ln -sf $(pwd)/build/backend-config.json $(pwd)/build/frontend/
