@@ -9,6 +9,8 @@ import {sock} from './socket'
 
 let fitFN = null;
 
+
+
 class App extends React.Component {
   constructor() {
     super()
@@ -47,6 +49,7 @@ class App extends React.Component {
     sock.once("disconnect", () => {
       console.log("disconnected from " + sock.id);
     });
+
   }
 
   componentDidMount() {

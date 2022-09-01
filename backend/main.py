@@ -28,6 +28,8 @@ except ModuleNotFoundError as e:
     import uvicorn
 
 
+PORT = 0
+SHELL = ""
 CHILD = 0
 
 class TTY:
@@ -47,7 +49,7 @@ class TTY:
             sys.stdout.flush()
             try:
                 os.environ["TERM"] = "xterm-256color"
-                os.execl("/bin/zsh", "/bin/zsh")
+                os.execl(SHELL, SHELL)
             except:
                 print("execl failed!")
 
@@ -136,12 +138,19 @@ def disconnect(sid):
     connections[sid].close()
     connections.pop(sid)
 
+# load settings
+with open("backend-config.json") as config_file:
+    contents = config_file.read()
+    config = json.loads(contents)
+    PORT = int(config["port"])
+    SHELL = config["shell"]
 
-if __name__ == "__main__":
-    loop = asyncio.new_event_loop()
-    config = uvicorn.Config(app=app, host="127.0.0.1", port=8235, loop=loop)
-    s = uvicorn.Server(config)
-    fut = loop.create_task(s.serve())
-    loop.create_task(ttyFN())
-    loop.run_until_complete(fut)
+print(f"starting server: PORT={PORT}, SHELL={SHELL}")
+
+loop = asyncio.new_event_loop()
+config = uvicorn.Config(app=app, host="127.0.0.1", port=PORT, loop=loop)
+s = uvicorn.Server(config)
+fut = loop.create_task(s.serve())
+loop.create_task(ttyFN())
+loop.run_until_complete(fut)
 

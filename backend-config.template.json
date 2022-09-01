@@ -1,0 +1,5 @@
+{
+    "port": 8000,
+    "frontend-port": 3000,
+    "shell": "/bin/zsh"
+}
