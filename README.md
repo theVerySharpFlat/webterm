@@ -2,6 +2,8 @@
 
 A terminal emulator with a static HTML/CSS/JS frontend and a python backend.
 
+<img src="screenshot.png" width="100%" height="100%"/>
+
 ## How it works
 The frontend is a react app that uses xtermjs to bring a terminal emulator to the user. The backend is a python script that hosts an ASGI server using uvicorn. The frontend and backend communicate through socketio. The backend sends tty output to the frontend and the frontend sends user input back in a loop. Technically you can modify the script and host this project on your own domain to give your users access to a terminal. However, I would strongly recommend against this as no thought has been put into security. Instead, you should host it locally.
 
