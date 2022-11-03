@@ -14,7 +14,9 @@ let fitFN = null;
 class App extends React.Component {
   constructor() {
     super()
-    this.terminal = new Terminal();
+    this.terminal = new Terminal({
+      fontFamily: "JetBrains Mono"
+    });
     this.terminal.onResize(evt => {
       console.log(`resize: (${evt.cols}, ${evt.rows})`);
     });
